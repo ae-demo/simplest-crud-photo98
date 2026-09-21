@@ -27,8 +27,8 @@ A simple, single-purpose photo app: a signed-in user uploads photos (each with a
 - **Photo storage**: uploaded image files are stored in Amazon S3 via the organization's registered `aws-s3` resource; the browser uploads/downloads directly against S3 using short-lived presigned URLs generated server-side (org default consumption pattern).
 - **Organization**: photos are a flat, per-user list — no albums or folders (per user's answer).
 - **Photo record**: each photo has an image file plus a title and description (per user's answer).
-- **Visibility**: a user's photos are private to that user; no sharing or cross-user viewing exists in this product. *assumed*
-- **Accepted files**: standard image formats (JPEG, PNG, GIF, WebP) up to 10 MB per upload. *assumed*
+- **Visibility**: a user's photos are private to that user; no sharing or cross-user viewing exists in this product.
+- **Accepted files**: standard image formats (JPEG, PNG, GIF, WebP) up to 10 MB per upload.
 
 ## Out of Scope
 
