@@ -1,0 +1,4 @@
+apiVersion = "agentic-engineer/v1"
+name = "simplest-crud-photo98"
+createdAt = "2026-09-21T04:14:40Z"
+idea = "simplest crud photo app with s3"
