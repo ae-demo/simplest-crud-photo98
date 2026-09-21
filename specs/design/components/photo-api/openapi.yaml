@@ -1,0 +1,247 @@
+openapi: 3.0.3
+info:
+  title: Photo API
+  version: 0.1.0
+  description: Manages photo metadata and mediates S3 access via presigned URLs.
+servers:
+  - url: /
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            photos:read: The caller's own photos
+            photos:upload: Upload a new photo
+            photos:edit: Edit a photo
+            photos:delete: Delete a photo
+  schemas:
+    Photo:
+      type: object
+      required: [id, title, description, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        contentType: { type: string }
+        sizeBytes: { type: integer }
+        viewUrl:
+          type: string
+          description: presigned GET URL for the image, valid for a short time
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    PhotoList:
+      type: object
+      required: [count, data]
+      properties:
+        count: { type: integer, description: total matching items }
+        next: { type: string, nullable: true, description: relative URI of the next page }
+        previous: { type: string, nullable: true, description: relative URI of the previous page }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Photo' }
+    UploadUrlRequest:
+      type: object
+      required: [contentType]
+      properties:
+        contentType: { type: string, description: MIME type of the image to upload }
+    UploadUrlResponse:
+      type: object
+      required: [uploadUrl, objectKey]
+      properties:
+        uploadUrl: { type: string, description: presigned PUT URL to upload the image bytes to }
+        objectKey: { type: string, description: S3 object key to reference when creating the photo }
+    CreatePhotoRequest:
+      type: object
+      required: [title, description, objectKey, contentType]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        objectKey: { type: string, description: object key returned by the upload-url request }
+        contentType: { type: string }
+        sizeBytes: { type: integer }
+    UpdatePhotoRequest:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        objectKey: { type: string, description: new object key, when the image was replaced }
+        contentType: { type: string }
+        sizeBytes: { type: integer }
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: integer, description: HTTP or application error code }
+        message: { type: string, description: short human-readable label }
+        description: { type: string, description: detailed explanation }
+        moreInfo: { type: string, description: URI to documentation }
+security:
+  - oauth2: []
+paths:
+  /me/photos/upload-url:
+    post:
+      operationId: createPhotoUploadUrl
+      summary: The caller's own — request a presigned URL to upload a new photo's image
+      security:
+        - oauth2: [photos:upload]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UploadUrlRequest' }
+      responses:
+        '200':
+          description: presigned upload URL and object key
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadUrlResponse' }
+        '400':
+          description: invalid content type
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: not signed in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /me/photos:
+    get:
+      operationId: listMyPhotos
+      summary: The caller's own photos
+      security:
+        - oauth2: [photos:read]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: a page of the caller's photos
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PhotoList' }
+        '401':
+          description: not signed in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    post:
+      operationId: createPhoto
+      summary: The caller's own — record a photo after its image was uploaded to S3
+      security:
+        - oauth2: [photos:upload]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePhotoRequest' }
+      responses:
+        '201':
+          description: photo created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Photo' }
+        '400':
+          description: invalid photo data
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: not signed in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /me/photos/{photoId}:
+    get:
+      operationId: getMyPhoto
+      summary: The caller's own — view a single photo, including a presigned view URL
+      security:
+        - oauth2: [photos:read]
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: the photo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Photo' }
+        '404':
+          description: no such photo for this caller
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: not signed in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    put:
+      operationId: updateMyPhoto
+      summary: The caller's own — edit a photo's title, description, or image
+      security:
+        - oauth2: [photos:edit]
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdatePhotoRequest' }
+      responses:
+        '200':
+          description: photo updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Photo' }
+        '400':
+          description: invalid photo data
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: no such photo for this caller
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: not signed in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      operationId: deleteMyPhoto
+      summary: The caller's own — delete a photo
+      security:
+        - oauth2: [photos:delete]
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: photo deleted
+        '404':
+          description: no such photo for this caller
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: not signed in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }

@@ -1,0 +1,17 @@
+{
+  "name": "photo-webapp",
+  "type": "web-application",
+  "version": "0.1.0",
+  "language": "TypeScript",
+  "buildpack": "docker",
+  "appPath": "photo-webapp",
+  "entrypoint": "deployment/web-application",
+  "exposure": "internet",
+  "dependencies": [
+    { "kind": "component", "name": "photo-api" },
+    { "kind": "platform-resource", "name": "user-auth", "resourceType": "thunder-app" }
+  ],
+  "description": "Single-page app where a signed-in user browses their personal photo gallery, uploads a new photo (title, description, image file), views a photo's detail, edits its title/description/image, and deletes it — all calls go through photo-api, which mediates S3 access via presigned URLs. Does not talk to S3 directly.",
+  "stories": [1, 2, 3, 4, 5, 6],
+  "skillsPinned": ["wireframes", "react-webapp", "oxygen-ui-design-system", "thunder-authentication"]
+}

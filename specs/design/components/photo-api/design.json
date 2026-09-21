@@ -1,0 +1,18 @@
+{
+  "name": "photo-api",
+  "type": "service",
+  "version": "0.1.0",
+  "language": "Ballerina",
+  "buildpack": "docker",
+  "appPath": "photo-api",
+  "entrypoint": "deployment/service",
+  "exposure": "intranet",
+  "dependencies": [
+    { "kind": "platform-resource", "name": "user-auth", "resourceType": "thunder-app" },
+    { "kind": "platform-resource", "name": "photo-db", "resourceType": "postgres-cnpg" },
+    { "kind": "external", "name": "aws-s3", "description": "Generates presigned S3 PutObject/GetObject URLs so the browser uploads and downloads photo image files directly against S3, and stores each photo's object key alongside its metadata." }
+  ],
+  "description": "Owns photo metadata (title, description, S3 object key, owner) in its own database, and generates short-lived S3 presigned URLs for upload and download so image bytes never pass through this service. Enforces that a user can only read, edit, or delete their own photos. Does not store or proxy image bytes itself.",
+  "stories": [1, 2, 3, 4, 5, 6],
+  "skillsPinned": ["openapi-conventions", "ballerina", "thunder-authentication", "api-management"]
+}

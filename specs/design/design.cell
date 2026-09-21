@@ -1,0 +1,17 @@
+title simplest-crud-photo98
+
+component photo-webapp as "Photo Gallery" web-application
+component photo-api as "Photo API" service
+component photo-db as "Photo Metadata DB" database
+
+east user-auth as "Thunder Auth" identity-server
+south aws-s3 as "AWS S3" service
+
+north -> photo-webapp
+
+photo-webapp -> photo-api
+photo-webapp -> user-auth
+
+photo-api -> user-auth
+photo-api -> aws-s3
+photo-api -> photo-db
